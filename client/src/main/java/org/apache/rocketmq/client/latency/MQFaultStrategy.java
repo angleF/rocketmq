@@ -24,11 +24,14 @@ import org.apache.rocketmq.common.message.MessageQueue;
 
 public class MQFaultStrategy {
     private final static InternalLogger log = ClientLogger.getLog();
+
+    /** 延迟容错对象，维护延迟Brokers的信息 ,key：brokerName**/
     private final LatencyFaultTolerance<String> latencyFaultTolerance = new LatencyFaultToleranceImpl();
-
+    /** 延迟容错开关 **/
     private boolean sendLatencyFaultEnable = false;
-
+    /** 延迟级别数组 **/
     private long[] latencyMax = {50L, 100L, 550L, 1000L, 2000L, 3000L, 15000L};
+    /** 不可用时长数组  **/
     private long[] notAvailableDuration = {0L, 0L, 30000L, 60000L, 120000L, 180000L, 600000L};
 
     public long[] getNotAvailableDuration() {
@@ -57,6 +60,7 @@ public class MQFaultStrategy {
 
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
         if (this.sendLatencyFaultEnable) {
+            // 使用Broker故障延迟机制选择消息队列
             try {
                 int index = tpInfo.getSendWhichQueue().getAndIncrement();
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
@@ -92,6 +96,13 @@ public class MQFaultStrategy {
         return tpInfo.selectOneMessageQueue(lastBrokerName);
     }
 
+    /**
+     * 更新故障项
+     * @param brokerName broker名称
+     * @param currentLatency  本次消息发送延迟时间
+     * @param isolation 是否隔离，为true，则使用默认时长30s来计算Broker故障规避时长；
+     *                  false：则使用本次消息发送延迟时间来计算Broker故障规避时长
+     */
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
         if (this.sendLatencyFaultEnable) {
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);

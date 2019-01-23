@@ -174,6 +174,7 @@ public class MQClientInstance {
         } else {
             List<QueueData> qds = route.getQueueDatas();
             Collections.sort(qds);
+            // 遍历QueueData列表，将写队列并且为master节点的QueueData对象数据集转换成MessageQueue对象列表
             for (QueueData qd : qds) {
                 if (PermName.isWriteable(qd.getPerm())) {
                     BrokerData brokerData = null;
@@ -602,10 +603,12 @@ public class MQClientInstance {
                             }
                         }
                     } else {
+                        // 使用topic向NameServer拉取主题路由新
                         topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, 1000 * 3);
                     }
                     if (topicRouteData != null) {
                         TopicRouteData old = this.topicRouteTable.get(topic);
+                        // 判断主题路由信息是否发生更改
                         boolean changed = topicRouteDataIsChange(old, topicRouteData);
                         if (!changed) {
                             changed = this.isNeedUpdateTopicRouteInfo(topic);
@@ -622,8 +625,10 @@ public class MQClientInstance {
 
                             // Update Pub info
                             {
+                                // 转换topic队列元数据
                                 TopicPublishInfo publishInfo = topicRouteData2TopicPublishInfo(topic, topicRouteData);
                                 publishInfo.setHaveTopicRouterInfo(true);
+                                // 更新所有消息发送者中该topic的路由信息
                                 Iterator<Entry<String, MQProducerInner>> it = this.producerTable.entrySet().iterator();
                                 while (it.hasNext()) {
                                     Entry<String, MQProducerInner> entry = it.next();

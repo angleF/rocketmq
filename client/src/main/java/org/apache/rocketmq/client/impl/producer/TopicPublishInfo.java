@@ -72,9 +72,11 @@ public class TopicPublishInfo {
     }
 
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
+        // 第一次调用时（指的是每条消息的第一次调用，后续为系统的自动重试）
         if (lastBrokerName == null) {
             return selectOneMessageQueue();
         } else {
+            // 通过通过队列个数进行取模来选择并且过滤上次发送失败的Broker
             int index = this.sendWhichQueue.getAndIncrement();
             for (int i = 0; i < this.messageQueueList.size(); i++) {
                 int pos = Math.abs(index++) % this.messageQueueList.size();
@@ -90,6 +92,7 @@ public class TopicPublishInfo {
     }
 
     public MessageQueue selectOneMessageQueue() {
+        // 通过队列个数进行取模来选择
         int index = this.sendWhichQueue.getAndIncrement();
         int pos = Math.abs(index) % this.messageQueueList.size();
         if (pos < 0)
