@@ -682,7 +682,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         // 获取Broker的网络地址
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
         if (null == brokerAddr) {
-            // 缓存中该Broker信息未null，则冲NameServer中主动拉取更新
+            // 缓存中该Broker信息为null，则从NameServer中主动拉取更新
             tryToFindTopicPublishInfo(mq.getTopic());
             brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
         }
@@ -714,7 +714,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     sysFlag |= MessageSysFlag.TRANSACTION_PREPARED_TYPE;
                 }
 
-                // 判断是否注册了消息发送钩子函数
+
                 if (hasCheckForbiddenHook()) {
                     CheckForbiddenContext checkForbiddenContext = new CheckForbiddenContext();
                     checkForbiddenContext.setNameSrvAddr(this.defaultMQProducer.getNamesrvAddr());
@@ -726,7 +726,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     checkForbiddenContext.setUnitMode(this.isUnitMode());
                     this.executeCheckForbiddenHook(checkForbiddenContext);
                 }
-
+                // 判断是否注册了消息发送钩子函数
                 if (this.hasSendMessageHook()) {
                     context = new SendMessageContext();
                     context.setProducer(this);
