@@ -44,6 +44,7 @@ public class ProcessQueue {
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
     private final InternalLogger log = ClientLogger.getLog();
     private final ReadWriteLock lockTreeMap = new ReentrantReadWriteLock();
+    /** 消息存储容器，key:消息偏移量，value:消息对象 **/
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<Long, MessageExt>();
     private final AtomicLong msgCount = new AtomicLong();
     private final AtomicLong msgSize = new AtomicLong();
@@ -62,15 +63,24 @@ public class ProcessQueue {
     private volatile boolean consuming = false;
     private volatile long msgAccCnt = 0;
 
+    /**
+     * 判断锁是否过期，锁超时时间为60s。通过系统参数recketmq.client.rabalance.lockMaxLiveTime设置
+     * @return
+     */
     public boolean isLockExpired() {
         return (System.currentTimeMillis() - this.lastLockTimestamp) > REBALANCE_LOCK_MAX_LIVE_TIME;
     }
 
+    /**
+     *  判断PullMessageServer是否空闲，默认120s  rocketmq.client.pull.pullMaxIdleTime 设置
+     * @return
+     */
     public boolean isPullExpired() {
         return (System.currentTimeMillis() - this.lastPullTimestamp) > PULL_MAX_IDLE_TIME;
     }
 
     /**
+     * 移除消费超时消息，默认15分钟为消费的消息将延时3个延迟级别在消费
      * @param pushConsumer
      */
     public void cleanExpiredMsg(DefaultMQPushConsumer pushConsumer) {
@@ -123,6 +133,11 @@ public class ProcessQueue {
         }
     }
 
+    /**
+     * 添加消息，PullMessageService拉取消息后，先调用该方法将消息添加到ProcessQueue
+     * @param msgs
+     * @return
+     */
     public boolean putMessage(final List<MessageExt> msgs) {
         boolean dispatchToConsume = false;
         try {
@@ -164,6 +179,10 @@ public class ProcessQueue {
         return dispatchToConsume;
     }
 
+    /**
+     * 获取当前消息最大间隔，
+     * @return
+     */
     public long getMaxSpan() {
         try {
             this.lockTreeMap.readLock().lockInterruptibly();

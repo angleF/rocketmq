@@ -65,7 +65,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * Consumers of the same role is required to have exactly same subscriptions and consumerGroup to correctly achieve
      * load balance. It's required and needs to be globally unique.
      * </p>
-     *
+     * 消费者所属组
      * See <a href="http://rocketmq.apache.org/docs/core-concept/">here</a> for further discussion.
      */
     private String consumerGroup;
@@ -79,7 +79,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * balances; Conversely, if the broadcasting is set, each consumer client will consume all subscribed messages
      * separately.
      * </p>
-     *
+     *消息消费模式  默认集群模式
      * This field defaults to clustering.
      */
     private MessageModel messageModel = MessageModel.CLUSTERING;
@@ -114,6 +114,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * messages born prior to {@link #consumeTimestamp} will be ignored
      * </li>
      * </ul>
+     *
+     * 如果从消息进度服务OffsetStore读取到MessageQueue的偏移量不小于0，则使用读取到的偏移量，只有在读取到的偏移量小于0时，该策略才会生效
      */
     private ConsumeFromWhere consumeFromWhere = ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
 
@@ -127,6 +129,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Queue allocation algorithm specifying how message queues are allocated to each consumer clients.
+     * 消息队列负载策略
      */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy;
 
@@ -162,6 +165,8 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Concurrently max span offset.it has no effect on sequential consumption
+     * 并发消息消费是处理队列最大跨度，默认2000，表示如果消息处理队列中偏移量最大的消息于偏移量最小的消息之间跨度超过2000，
+     * 则延迟50ms后再拉取消息
      */
     private int consumeConcurrentlyMaxSpan = 2000;
 
@@ -204,10 +209,12 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Message pull Interval
+     * push模式下任务拉取间隔时间，默认一次拉取任务完成后继续拉取
      */
     private long pullInterval = 0;
 
-    /**
+    /**消息并发消费时一次消费消息条数 ， 通俗点说
+     就是每次传入 MessageListtener # consumeMessage 中的消息条数
      * Batch consumption size
      */
     private int consumeMessageBatchMaxSize = 1;
@@ -219,6 +226,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Whether update subscription relationship when every pull
+     * 是否每次拉取消息都更新订阅信息
      */
     private boolean postSubscriptionWhenPull = false;
 
@@ -233,11 +241,13 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      *
      * If messages are re-consumed more than {@link #maxReconsumeTimes} before success, it's be directed to a deletion
      * queue waiting.
+     * 每条消息最大重试消费次数，重试次数大于该数则将该消息移入失败队列，等待删除
      */
     private int maxReconsumeTimes = -1;
 
     /**
      * Suspending pulling time for cases requiring slow pulling like flow-control scenario.
+     *
      */
     private long suspendCurrentQueueTimeMillis = 1000;
 
@@ -490,7 +500,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     /**
      * Send message back to the broker whose name is <code>brokerName</code> and the message will be re-delivered in
      * future.
-     *
+     *  发送消息ACK确认
      * @param msg Message to send back.
      * @param delayLevel delay level.
      * @param brokerName broker name.
@@ -505,6 +515,12 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
         this.defaultMQPushConsumerImpl.sendMessageBack(msg, delayLevel, brokerName);
     }
 
+    /**
+     * 获取消费者订阅主题$topic$上的消息队列
+     * @param topic message topic
+     * @return
+     * @throws MQClientException
+     */
     @Override
     public Set<MessageQueue> fetchSubscribeMessageQueues(String topic) throws MQClientException {
         return this.defaultMQPushConsumerImpl.fetchSubscribeMessageQueues(topic);
@@ -537,7 +553,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Register a callback to execute on message arrival for concurrent consuming.
-     *
+     * 注册并发消息事件监听
      * @param messageListener message handling callback.
      */
     @Override
@@ -548,7 +564,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Register a callback to execute on message arrival for orderly consuming.
-     *
+     *  注册顺序消息监听器
      * @param messageListener message handling callback.
      */
     @Override

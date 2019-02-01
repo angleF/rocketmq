@@ -603,7 +603,7 @@ public class MQClientInstance {
                             }
                         }
                     } else {
-                        // 使用topic向NameServer拉取主题路由新
+                        // 使用topic向NameServer拉取主题路由信息
                         topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, 1000 * 3);
                     }
                     if (topicRouteData != null) {
